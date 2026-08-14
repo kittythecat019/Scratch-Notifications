@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Scratch Notifications</title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+
+            margin: 0;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background: #f5f5f5;
+
+            color: #333;
+        }
+
+
+        /* =====================================
+           HEADER
+        ===================================== */
+
+        header {
+
+            background: white;
+
+            padding: 20px;
+
+            border-bottom:
+                1px solid #ddd;
+
+            position: sticky;
+
+            top: 0;
+
+            z-index: 10;
+        }
+
+
+        header h1 {
+
+            margin:
+                0 0 10px 0;
+        }
+
+
+        #status {
+
+            font-size: 14px;
+
+            color: #666;
+        }
+
+
+        #refresh {
+
+            padding:
+                10px 18px;
+
+            border: none;
+
+            border-radius: 8px;
+
+            background: #4a90e2;
+
+            color: white;
+
+            cursor: pointer;
+
+            font-size: 14px;
+        }
+
+
+        #refresh:hover {
+
+            opacity: 0.85;
+        }
+
+
+        /* =====================================
+           ACCOUNT TABS
+        ===================================== */
+
+        #accounts {
+
+            max-width: 900px;
+
+            margin:
+                20px auto 0 auto;
+
+            padding:
+                0 15px;
+
+            display: flex;
+
+            gap: 8px;
+
+            overflow-x: auto;
+        }
+
+
+        .account-tab {
+
+            flex-shrink: 0;
+
+            padding:
+                12px 18px;
+
+            border: none;
+
+            border-radius:
+                10px 10px 0 0;
+
+            background: #ddd;
+
+            color: #555;
+
+            cursor: pointer;
+
+            font-size: 14px;
+
+            transition:
+                0.15s;
+        }
+
+
+        .account-tab:hover {
+
+            background: #ccc;
+        }
+
+
+        .account-tab.active {
+
+            background: #4a90e2;
+
+            color: white;
+        }
+
+
+        .account-tab .status {
+
+            display: block;
+
+            font-size: 11px;
+
+            margin-top: 4px;
+        }
+
+
+        /* =====================================
+           NOTIFICATIONS
+        ===================================== */
+
+        #notifications {
+
+            max-width: 900px;
+
+            margin:
+                0 auto;
+
+            padding:
+                20px 15px;
+        }
+
+
+        .account-title {
+
+            background: white;
+
+            padding: 15px;
+
+            border-radius: 10px;
+
+            margin-bottom: 10px;
+
+            font-size: 20px;
+
+            font-weight: bold;
+
+            box-shadow:
+                0 2px 5px
+                rgba(0, 0, 0, 0.08);
+        }
+
+
+        .notification {
+
+            background: white;
+
+            padding: 15px;
+
+            margin-bottom: 10px;
+
+            border-radius: 10px;
+
+            box-shadow:
+                0 2px 5px
+                rgba(0, 0, 0, 0.08);
+        }
+
+
+        .notification-header {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 8px;
+
+            margin-bottom: 8px;
+        }
+
+
+        .icon {
+
+            font-size: 24px;
+        }
+
+
+        .type {
+
+            font-weight: bold;
+        }
+
+
+        .username {
+
+            font-weight: bold;
+
+            color: #4a90e2;
+        }
+
+
+        .comment {
+
+            margin-top: 8px;
+
+            padding: 10px;
+
+            background: #f7f7f7;
+
+            border-radius: 6px;
+        }
+
+
+        .project {
+
+            margin-top: 8px;
+
+            font-size: 14px;
+
+            color: #666;
+        }
+
+
+        .time {
+
+            margin-top: 8px;
+
+            font-size: 12px;
+
+            color: #999;
+        }
+
+
+        .empty {
+
+            background: white;
+
+            padding: 30px;
+
+            text-align: center;
+
+            border-radius: 10px;
+
+            color: #888;
+        }
+
+
+        .error {
+
+            background: #ffe5e5;
+
+            color: #c00;
+
+            padding: 15px;
+
+            border-radius: 10px;
+
+            margin-bottom: 10px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <h1>
+        🔔 Scratch Notifications
+    </h1>
+
+    <div id="status">
+        Đang kết nối...
+    </div>
+
+    <br>
+
+    <button id="refresh">
+        🔄 Cập nhật
+    </button>
+
+</header>
+
+
+<!-- =====================================
+     ACCOUNT TABS
+===================================== -->
+
+<div id="accounts">
+
+    <!-- Các tài khoản sẽ được tạo ở đây -->
+
+</div>
+
+
+<!-- =====================================
+     NOTIFICATIONS
+===================================== -->
+
+<main>
+
+    <div id="notifications">
+
+        <div class="empty">
+            Đang tải thông báo...
+        </div>
+
+    </div>
+
+</main>
+
+
+<!-- =====================================
+     SOCKET.IO
+===================================== -->
+
+<script src="/socket.io/socket.io.js"></script>
+
+
+<script>
+
+    // =====================================
+    // SOCKET
+    // =====================================
+
+    const socket = io();
+
+
+    // =====================================
+    // ELEMENTS
+    // =====================================
+
+    const statusElement =
+        document.getElementById(
+            "status"
+        );
+
+    const accountsElement =
+        document.getElementById(
+            "accounts"
+        );
+
+    const container =
+        document.getElementById(
+            "notifications"
+        );
+
+    const refreshButton =
+        document.getElementById(
+            "refresh"
+        );
+
+
+    // =====================================
+    // ACCOUNT DATA
+    // =====================================
+
+    const accounts = {};
+
+    let selectedAccount = null;
+
+
+    // =====================================
+    // CONNECT
+    // =====================================
+
+    socket.on(
+        "connect",
+        () => {
+
+            console.log(
+                "Đã kết nối server"
+            );
+
+            statusElement.textContent =
+                "🟢 Đã kết nối";
+
+            socket.emit(
+                "updateNow"
+            );
+
+        }
+    );
+
+
+    // =====================================
+    // DISCONNECT
+    // =====================================
+
+    socket.on(
+        "disconnect",
+        () => {
+
+            statusElement.textContent =
+                "🔴 Mất kết nối";
+
+        }
+    );
+
+
+    // =====================================
+    // REFRESH
+    // =====================================
+
+    refreshButton.addEventListener(
+        "click",
+        () => {
+
+            statusElement.textContent =
+                "🟡 Đang cập nhật...";
+
+            socket.emit(
+                "updateNow"
+            );
+
+        }
+    );
+
+
+    // =====================================
+    // ACCOUNT STATUS TEXT
+    // =====================================
+
+    function statusText(status) {
+
+        switch (status) {
+
+            case "online":
+
+                return "🟢 Online";
+
+
+            case "logging_in":
+
+                return "🟡 Đăng nhập";
+
+
+            case "checking_session":
+
+                return "🟡 Kiểm tra";
+
+
+            case "login_error":
+
+                return "🔴 Login lỗi";
+
+
+            case "session_expired":
+
+                return "🔴 Session hết hạn";
+
+
+            default:
+
+                return "⚪ " + status;
+        }
+    }
+
+
+    // =====================================
+    // CREATE ACCOUNT TAB
+    // =====================================
+
+    function createAccountTab(
+        username,
+        status
+    ) {
+
+        const button =
+            document.createElement(
+                "button"
+            );
+
+        button.className =
+            "account-tab";
+
+        button.dataset.username =
+            username;
+
+
+        button.innerHTML = `
+            ${username}
+            <span class="status">
+                ${statusText(status)}
+            </span>
+        `;
+
+
+        button.onclick = () => {
+
+            selectAccount(
+                username
+            );
+
+        };
+
+
+        accountsElement.appendChild(
+            button
+        );
+    }
+
+
+    // =====================================
+    // SELECT ACCOUNT
+    // =====================================
+
+    function selectAccount(
+        username
+    ) {
+
+        selectedAccount =
+            username;
+
+
+        console.log(
+            "Đang xem tài khoản:",
+            username
+        );
+
+
+        /*
+         * Đổi tab active
+         */
+
+        const tabs =
+            document.querySelectorAll(
+                ".account-tab"
+            );
+
+
+        tabs.forEach(
+            tab => {
+
+                tab.classList.toggle(
+
+                    "active",
+
+                    tab.dataset.username ===
+                        username
+
+                );
+
+            }
+        );
+
+
+        /*
+         * Hiển thị notification
+         */
+
+        renderAccount();
+    }
+
+
+    // =====================================
+    // RENDER CURRENT ACCOUNT
+    // =====================================
+
+    function renderAccount() {
+
+        container.innerHTML =
+            "";
+
+
+        if (!selectedAccount) {
+
+            container.innerHTML = `
+                <div class="empty">
+                    Chọn một tài khoản
+                </div>
+            `;
+
+            return;
+        }
+
+
+        const account =
+            accounts[
+                selectedAccount
+            ];
+
+
+        if (!account) {
+
+            return;
+        }
+
+
+        /*
+         * TITLE
+         */
+
+        const title =
+            document.createElement(
+                "div"
+            );
+
+        title.className =
+            "account-title";
+
+        title.textContent =
+            "👤 " +
+            account.username;
+
+        container.appendChild(
+            title
+        );
+
+
+        /*
+         * EMPTY
+         */
+
+        if (
+            !Array.isArray(
+                account.notifications
+            ) ||
+            account.notifications.length ===
+                0
+        ) {
+
+            const empty =
+                document.createElement(
+                    "div"
+                );
+
+            empty.className =
+                "empty";
+
+            empty.textContent =
+                "Không có thông báo.";
+
+            container.appendChild(
+                empty
+            );
+
+            return;
+        }
+
+
+        /*
+         * NOTIFICATIONS
+         */
+
+        account.notifications.forEach(
+            message => {
+
+                const element =
+                    createNotification(
+                        message
+                    );
+
+                container.appendChild(
+                    element
+                );
+
+            }
+        );
+    }
+
+
+    // =====================================
+    // NOTIFICATION
+    // =====================================
+
+    socket.on(
+        "notification",
+        data => {
+
+            console.log(
+                "Notification:",
+                data
+            );
+
+
+            /*
+             * Tạo account nếu chưa có
+             */
+
+            if (
+                !accounts[
+                    data.username
+                ]
+            ) {
+
+                accounts[
+                    data.username
+                ] = {
+
+                    username:
+                        data.username,
+
+                    status:
+                        "online",
+
+                    notifications:
+                        []
+                };
+
+
+                createAccountTab(
+                    data.username,
+                    "online"
+                );
+            }
+
+
+            /*
+             * Lưu notification
+             */
+
+            let messages =
+                data.notifications;
+
+
+            if (
+                !Array.isArray(
+                    messages
+                )
+            ) {
+
+                messages =
+                    data.notification;
+            }
+
+
+            if (
+                !Array.isArray(
+                    messages
+                )
+            ) {
+
+                messages = [];
+            }
+
+
+            accounts[
+                data.username
+            ].notifications =
+                messages;
+
+
+            /*
+             * Nếu đang xem account này
+             */
+
+            if (
+                selectedAccount ===
+                data.username
+            ) {
+
+                renderAccount();
+            }
+
+
+            statusElement.textContent =
+                "🟢 Đã cập nhật";
+        }
+    );
+
+
+    // =====================================
+    // ACCOUNT STATUS
+    // =====================================
+
+    socket.on(
+        "accountStatus",
+        data => {
+
+            console.log(
+                "Account status:",
+                data
+            );
+
+
+            /*
+             * Nếu account chưa tồn tại
+             */
+
+            if (
+                !accounts[
+                    data.username
+                ]
+            ) {
+
+                accounts[
+                    data.username
+                ] = {
+
+                    username:
+                        data.username,
+
+                    status:
+                        data.status,
+
+                    notifications:
+                        []
+                };
+
+
+                createAccountTab(
+                    data.username,
+                    data.status
+                );
+
+            }
+
+
+            /*
+             * Cập nhật status
+             */
+
+            accounts[
+                data.username
+            ].status =
+                data.status;
+
+
+            /*
+             * Cập nhật tab
+             */
+
+            const tab =
+                document.querySelector(
+                    `.account-tab[data-username="${CSS.escape(data.username)}"]`
+                );
+
+
+            if (tab) {
+
+                const status =
+                    tab.querySelector(
+                        ".status"
+                    );
+
+                status.textContent =
+                    statusText(
+                        data.status
+                    );
+            }
+
+
+            /*
+             * Render lại nếu đang xem
+             */
+
+            if (
+                selectedAccount ===
+                data.username
+            ) {
+
+                renderAccount();
+            }
+
+        }
+    );
+
+
+    // =====================================
+    // CREATE NOTIFICATION
+    // =====================================
+
+    function createNotification(
+        message
+    ) {
+
+        const element =
+            document.createElement(
+                "div"
+            );
+
+        element.className =
+            "notification";
+
+
+        // =================================
+        // ICON
+        // =================================
+
+        let icon =
+            "🔔";
+
+        let type =
+            message.type ||
+            "Notification";
+
+
+        switch (
+            message.type
+        ) {
+
+            case "addcomment":
+
+                icon =
+                    "💬";
+
+                type =
+                    "Bình luận";
+
+                break;
+
+
+            case "loveproject":
+
+                icon =
+                    "❤️";
+
+                type =
+                    "Love";
+
+                break;
+
+
+            case "favoriteproject":
+
+                icon =
+                    "⭐";
+
+                type =
+                    "Favorite";
+
+                break;
+
+
+            case "followuser":
+
+                icon =
+                    "👤";
+
+                type =
+                    "Follow";
+
+                break;
+
+
+            case "curatorinvite":
+
+                icon =
+                    "📨";
+
+                type =
+                    "Curator Invite";
+
+                break;
+
+        }
+
+
+        // =================================
+        // HEADER
+        // =================================
+
+        const header =
+            document.createElement(
+                "div"
+            );
+
+        header.className =
+            "notification-header";
+
+
+        const iconElement =
+            document.createElement(
+                "span"
+            );
+
+        iconElement.className =
+            "icon";
+
+        iconElement.textContent =
+            icon;
+
+
+        const typeElement =
+            document.createElement(
+                "span"
+            );
+
+        typeElement.className =
+            "type";
+
+        typeElement.textContent =
+            type;
+
+
+        header.appendChild(
+            iconElement
+        );
+
+        header.appendChild(
+            typeElement
+        );
+
+
+        element.appendChild(
+            header
+        );
+
+
+        // =================================
+        // USERNAME
+        // =================================
+
+        if (
+            message.actor_username
+        ) {
+
+            const user =
+                document.createElement(
+                    "div"
+                );
+
+            user.textContent =
+                "Từ: ";
+
+
+            const username =
+                document.createElement(
+                    "span"
+                );
+
+            username.className =
+                "username";
+
+            username.textContent =
+                message.actor_username;
+
+
+            user.appendChild(
+                username
+            );
+
+
+            element.appendChild(
+                user
+            );
+        }
+
+
+        // =================================
+        // COMMENT
+        // =================================
+
+        if (
+            message.comment_fragment
+        ) {
+
+            const comment =
+                document.createElement(
+                    "div"
+                );
+
+            comment.className =
+                "comment";
+
+            comment.textContent =
+                message.comment_fragment;
+
+            element.appendChild(
+                comment
+            );
+        }
+
+
+        // =================================
+        // PROJECT
+        // =================================
+
+        if (
+            message.comment_obj_title
+        ) {
+
+            const project =
+                document.createElement(
+                    "div"
+                );
+
+            project.className =
+                "project";
+
+            project.textContent =
+                "📁 Project: " +
+                message.comment_obj_title;
+
+            element.appendChild(
+                project
+            );
+        }
+
+
+        // =================================
+        // TIME
+        // =================================
+
+        if (
+            message.datetime_created
+        ) {
+
+            const time =
+                document.createElement(
+                    "div"
+                );
+
+            time.className =
+                "time";
+
+
+            const date =
+                new Date(
+                    message.datetime_created
+                );
+
+
+            time.textContent =
+                date.toLocaleString(
+                    "vi-VN"
+                );
+
+
+            element.appendChild(
+                time
+            );
+        }
+
+
+        return element;
+    }
+
+
+    // =====================================
+    // ERROR
+    // =====================================
+
+    socket.on(
+        "notificationError",
+        data => {
+
+            console.error(
+                "Notification error:",
+                data
+            );
+
+
+            if (
+                !accounts[
+                    data.username
+                ]
+            ) {
+
+                accounts[
+                    data.username
+                ] = {
+
+                    username:
+                        data.username,
+
+                    status:
+                        "online",
+
+                    notifications:
+                        []
+                };
+
+
+                createAccountTab(
+                    data.username,
+                    "online"
+                );
+            }
+
+
+            /*
+             * Hiển thị lỗi trong account
+             */
+
+            if (
+                selectedAccount ===
+                data.username
+            ) {
+
+                container.innerHTML = `
+                    <div class="error">
+                        ❌ ${data.username}: ${data.error}
+                    </div>
+                `;
+            }
+
+
+            statusElement.textContent =
+                "🔴 Có lỗi";
+        }
+    );
+
+</script>
+
+</body>
+
+</html>

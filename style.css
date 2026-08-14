@@ -1,0 +1,75 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+}
+
+.container {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 20px;
+}
+
+section {
+    background: white;
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 12px;
+}
+
+.account {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+.notification {
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+}
+#accounts {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.account-tab {
+    border: none;
+    background: #eee;
+    padding: 10px 16px;
+    border-radius: 10px 10px 0 0;
+    cursor: pointer;
+
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    white-space: nowrap;
+}
+
+.account-tab:hover {
+    background: #ddd;
+}
+
+.account-tab.active {
+    background: #333;
+    color: white;
+}
+
+.account-tab span {
+    font-size: 12px;
+}
+
+#notifications {
+    padding: 20px;
+}
+
+.notification {
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    background: #f2f2f2;
+}
