@@ -6,21 +6,18 @@ const path = require("path");
 const fs = require("fs");
 const Scratch = require("scratch-api");
 const { Server } = require("socket.io");
-const { execFile, execFileSync } = require("child_process");
+const { execFile } = require("child_process");
 
 
 // ==========================================
-// UV / PYTHON ENVIRONMENT
+// PYTHON / UV
 // ==========================================
 
-// Render/Linux thường dùng python3
 const PYTHON =
     process.platform === "win32"
         ? "python"
         : "python3";
 
-
-// Các vị trí uv thường gặp trên Linux
 const UV_PATHS = [
     "/usr/local/bin/uv",
     "/usr/bin/uv",
@@ -28,7 +25,10 @@ const UV_PATHS = [
     "/usr/local/sbin/uv"
 ];
 
+let UV_PATH = null;
 
+
+// Tìm uv
 for (const possiblePath of UV_PATHS) {
 
     if (fs.existsSync(possiblePath)) {
@@ -38,6 +38,12 @@ for (const possiblePath of UV_PATHS) {
         break;
     }
 }
+
+
+// Hiển thị thông tin
+console.log(
+    "================================="
+);
 
 console.log(
     "Python:",
@@ -49,43 +55,12 @@ console.log(
     UV_PATH || "KHÔNG TÌM THẤY"
 );
 
-
-// Tìm uv
-let UV_PATH = null;
-
-for (const possiblePath of UV_PATHS) {
-
-    if (fs.existsSync(possiblePath)) {
-
-        UV_PATH = possiblePath;
-
-        break;
-    }
-}
-
-
-// Log kiểm tra
-console.log(
-    "================================="
-);
-
-console.log(
-    " Python:",
-    PYTHON
-);
-
-console.log(
-    " UV:",
-    UV_PATH || "KHÔNG TÌM THẤY"
-);
-
 console.log(
     "================================="
 );
 
 
-// Nếu tìm thấy uv,
-// thêm thư mục chứa uv vào PATH
+// Thêm thư mục chứa uv vào PATH
 if (UV_PATH) {
 
     const uvDirectory =
@@ -95,7 +70,6 @@ if (UV_PATH) {
         uvDirectory +
         ":" +
         (process.env.PATH || "");
-
 }
 
 
@@ -338,7 +312,10 @@ for (
         ];
 
 
-    // Không còn account
+    /*
+     * Không còn account
+     */
+
     if (
         !username &&
         !password
@@ -349,7 +326,10 @@ for (
     }
 
 
-    // Thiếu thông tin
+    /*
+     * Thiếu username/password
+     */
+
     if (
         !username ||
         !password
@@ -379,7 +359,10 @@ for (
         sessionId:
             savedSession,
 
-        // X-Token lấy bằng auth.py
+        /*
+         * X-Token lấy bằng auth.py
+         */
+
         xToken:
             null,
 
@@ -547,6 +530,23 @@ function getAuthFromPython(
                 );
 
 
+            if (
+                !fs.existsSync(
+                    authPath
+                )
+            ) {
+
+                reject(
+                    new Error(
+                        "Không tìm thấy auth.py"
+                    )
+                );
+
+                return;
+
+            }
+
+
             console.log(
                 `[${username}] Chạy auth.py...`
             );
@@ -560,15 +560,13 @@ function getAuthFromPython(
 
             console.log(
                 `[${username}] UV:`,
-                UV_PATH || "PATH"
+                UV_PATH ||
+                    "KHÔNG TÌM THẤY"
             );
 
 
             /*
-             * Environment cho Python.
-             *
-             * Quan trọng:
-             * truyền PATH hiện tại cho auth.py
+             * Environment cho Python
              */
 
             const pythonEnv = {
@@ -576,14 +574,15 @@ function getAuthFromPython(
                 ...process.env,
 
                 PATH:
-                    process.env.PATH || ""
+                    process.env.PATH ||
+                    ""
 
             };
 
 
             /*
-             * Nếu tìm thấy uv,
-             * thêm thư mục của uv vào PATH.
+             * Đảm bảo thư mục uv
+             * nằm trong PATH
              */
 
             if (UV_PATH) {
@@ -762,12 +761,33 @@ async function refreshXToken(
         );
 
 
+    /*
+     * Kiểm tra username
+     */
+
+    if (
+        result.username &&
+        result.username !==
+            account.username
+    ) {
+
+        throw new Error(
+            "Session không thuộc tài khoản này"
+        );
+
+    }
+
+
+    /*
+     * Lưu X-Token
+     */
+
     account.xToken =
         result.xToken;
 
 
     /*
-     * Nếu auth.py trả sessionId mới
+     * Nếu Python trả sessionId mới
      */
 
     if (
@@ -815,7 +835,7 @@ async function loginAccount(
     try {
 
         /*
-         * Login Scratch
+         * Login bằng username/password
          */
 
         const sessionId =
@@ -840,16 +860,12 @@ async function loginAccount(
 
 
         /*
-         * Xóa token cũ
+         * Lấy X-Token
          */
 
         account.xToken =
             null;
 
-
-        /*
-         * Lấy token mới
-         */
 
         await refreshXToken(
             account
@@ -966,7 +982,7 @@ function getNotifications(
 
 
             /*
-             * Session
+             * Session cookie
              */
 
             args.push(
@@ -999,6 +1015,15 @@ function getNotifications(
                         );
 
 
+                        if (stderr) {
+
+                            console.log(
+                                stderr
+                            );
+
+                        }
+
+
                         reject(error);
 
                         return;
@@ -1011,7 +1036,7 @@ function getNotifications(
 
 
                     /*
-                     * Scratch trả HTML/XML
+                     * HTML/XML
                      */
 
                     if (
@@ -1043,7 +1068,7 @@ function getNotifications(
 
 
                         /*
-                         * API trả object lỗi
+                         * API error
                          */
 
                         if (
@@ -1143,6 +1168,22 @@ async function checkAccount(
     );
 
 
+    console.log(
+        `[${account.username}] Session:`,
+        account.sessionId
+            ? "CÓ"
+            : "KHÔNG"
+    );
+
+
+    console.log(
+        `[${account.username}] X-Token:`,
+        account.xToken
+            ? "CÓ"
+            : "KHÔNG"
+    );
+
+
     /*
      * Không có session
      */
@@ -1194,7 +1235,7 @@ async function checkAccount(
 
 
             /*
-             * Session có thể đã hết hạn.
+             * Session không dùng được
              */
 
             account.sessionId =
@@ -1207,6 +1248,12 @@ async function checkAccount(
 
             deleteSession(
                 account.username
+            );
+
+
+            setStatus(
+                account,
+                "session_expired"
             );
 
 
@@ -1302,11 +1349,6 @@ async function checkAccount(
             "SESSION_INVALID"
         ) {
 
-            console.log(
-                `[${account.username}] Session hết hạn → login lại`
-            );
-
-
             account.sessionId =
                 null;
 
@@ -1341,7 +1383,7 @@ async function checkAccount(
          */
 
         console.log(
-            `[${account.username}] Giữ session`
+            `[${account.username}] Giữ session vì lỗi API`
         );
 
     }
@@ -1383,6 +1425,10 @@ async function checkAllAccounts() {
                 account
             );
 
+
+            /*
+             * Nghỉ giữa các tài khoản
+             */
 
             await sleep(
                 2000
