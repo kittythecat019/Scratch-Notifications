@@ -321,7 +321,7 @@
 <header>
 
     <h1>
-        🔔 Scratch Notifications
+        Scratch Notifications
     </h1>
 
     <div id="status">
@@ -331,7 +331,7 @@
     <br>
 
     <button id="refresh">
-        🔄 Cập nhật
+        Cập nhật
     </button>
 
 </header>
@@ -428,7 +428,7 @@
             );
 
             statusElement.textContent =
-                "🟢 Đã kết nối";
+                "Đã kết nối";
 
             socket.emit(
                 "updateNow"
@@ -447,7 +447,7 @@
         () => {
 
             statusElement.textContent =
-                "🔴 Mất kết nối";
+                "Mất kết nối";
 
         }
     );
@@ -462,7 +462,7 @@
         () => {
 
             statusElement.textContent =
-                "🟡 Đang cập nhật...";
+                "Đang cập nhật...";
 
             socket.emit(
                 "updateNow"
@@ -482,32 +482,32 @@
 
             case "online":
 
-                return "🟢 Online";
+                return "xong";
 
 
             case "logging_in":
 
-                return "🟡 Đăng nhập";
+                return "Đăng nhập";
 
 
             case "checking_session":
 
-                return "🟡 Kiểm tra";
+                return "Kiểm tra";
 
 
             case "login_error":
 
-                return "🔴 Login lỗi";
+                return "Login lỗi";
 
 
             case "session_expired":
 
-                return "🔴 Session hết hạn";
+                return "session hết hạn";
 
 
             default:
 
-                return "⚪ " + status;
+                return status;
         }
     }
 
@@ -655,7 +655,7 @@
             "account-title";
 
         title.textContent =
-            "👤 " +
+            "😺 " +
             account.username;
 
         container.appendChild(
@@ -810,7 +810,7 @@
 
 
             statusElement.textContent =
-                "🟢 Đã cập nhật";
+                "Đã cập nhật";
         }
     );
 
@@ -934,7 +934,7 @@
         // =================================
 
         let icon =
-            "🔔";
+            "❌";
 
         let type =
             message.type ||
@@ -981,7 +981,7 @@
             case "followuser":
 
                 icon =
-                    "👤";
+                    "😺";
 
                 type =
                     "Follow";
@@ -992,7 +992,7 @@
             case "curatorinvite":
 
                 icon =
-                    "📨";
+                    "➕";
 
                 type =
                     "Curator Invite";
@@ -1135,7 +1135,7 @@
                 "project";
 
             project.textContent =
-                "📁 Project: " +
+                "Project: " +
                 message.comment_obj_title;
 
             element.appendChild(
@@ -1243,7 +1243,7 @@
 
 
             statusElement.textContent =
-                "🔴 Có lỗi";
+                "Có lỗi";
         }
     );
 
