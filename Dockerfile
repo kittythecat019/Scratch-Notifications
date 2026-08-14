@@ -9,13 +9,12 @@ RUN apt-get update \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Cài uv vào /usr/local/bin
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && cp /root/.local/bin/uv /usr/local/bin/uv \
-    && chmod +x /usr/local/bin/uv
+# Cài uv bằng pip
+RUN pip3 install --break-system-packages uv
 
-# Kiểm tra uv ngay lúc BUILD
-RUN /usr/local/bin/uv --version
+# Kiểm tra uv
+RUN which uv
+RUN uv --version
 
 COPY package*.json ./
 
