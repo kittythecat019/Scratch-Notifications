@@ -8,69 +8,41 @@ const Scratch = require("scratch-api");
 const { Server } = require("socket.io");
 const { execFile } = require("child_process");
 
-
 // ==========================================
 // SERVER
 // ==========================================
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-const server =
-    http.createServer(app);
-
-const io =
-    new Server(server);
-
-const PORT =
-    process.env.PORT || 3000;
-
-
-// ==========================================
-// STATIC
-// ==========================================
+const PORT = process.env.PORT || 3000;
 
 app.use(
     express.static(
-        path.join(
-            __dirname,
-            "public"
-        )
+        path.join(__dirname, "public")
     )
 );
 
+app.get("/", (req, res) => {
 
-app.get(
-    "/",
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                "public",
-                "index.html"
-            )
-        );
-
-    }
-);
-
+    res.sendFile(
+        path.join(
+            __dirname,
+            "public",
+            "index.html"
+        )
+    );
+});
 
 // ==========================================
 // SESSION FOLDER
 // ==========================================
 
 const SESSION_DIR =
-    path.join(
-        __dirname,
-        "sessions"
-    );
+    path.join(__dirname, "sessions");
 
-
-if (
-    !fs.existsSync(
-        SESSION_DIR
-    )
-) {
+if (!fs.existsSync(SESSION_DIR)) {
 
     fs.mkdirSync(
         SESSION_DIR,
@@ -78,17 +50,13 @@ if (
             recursive: true
         }
     );
-
 }
-
 
 // ==========================================
 // SESSION FILE
 // ==========================================
 
-function getSessionFile(
-    username
-) {
+function getSessionFile(username) {
 
     const safeUsername =
         username.replace(
@@ -96,37 +64,25 @@ function getSessionFile(
             "_"
         );
 
-
     return path.join(
         SESSION_DIR,
         `${safeUsername}.json`
     );
-
 }
-
 
 // ==========================================
 // LOAD SESSION
 // ==========================================
 
-function loadSession(
-    username
-) {
+function loadSession(username) {
 
     const file =
-        getSessionFile(
-            username
-        );
+        getSessionFile(username);
 
-
-    if (
-        !fs.existsSync(file)
-    ) {
+    if (!fs.existsSync(file)) {
 
         return null;
-
     }
-
 
     try {
 
@@ -138,11 +94,7 @@ function loadSession(
                 )
             );
 
-
-        return (
-            data.sessionId ||
-            null
-        );
+        return data.sessionId || null;
 
     } catch (error) {
 
@@ -151,11 +103,8 @@ function loadSession(
         );
 
         return null;
-
     }
-
 }
-
 
 // ==========================================
 // SAVE SESSION
@@ -167,10 +116,7 @@ function saveSession(
 ) {
 
     const file =
-        getSessionFile(
-            username
-        );
-
+        getSessionFile(username);
 
     fs.writeFileSync(
         file,
@@ -178,50 +124,36 @@ function saveSession(
             {
                 username,
                 sessionId,
-                savedAt:
-                    Date.now()
+                savedAt: Date.now()
             },
             null,
             2
         )
     );
 
-
     console.log(
         `[${username}] Session đã được lưu`
     );
-
 }
-
 
 // ==========================================
 // DELETE SESSION
 // ==========================================
 
-function deleteSession(
-    username
-) {
+function deleteSession(username) {
 
     const file =
-        getSessionFile(
-            username
-        );
+        getSessionFile(username);
 
-
-    if (
-        fs.existsSync(file)
-    ) {
+    if (fs.existsSync(file)) {
 
         fs.unlinkSync(file);
 
         console.log(
             `[${username}] Session cũ đã xóa`
         );
-
     }
-
 }
-
 
 // ==========================================
 // ACCOUNTS
@@ -229,66 +161,34 @@ function deleteSession(
 
 const accounts = [];
 
-
-for (
-    let i = 1;
-    ;
-    i++
-) {
+for (let i = 1; ; i++) {
 
     const username =
         process.env[
             `SCRATCH_USER_${i}`
         ];
 
-
     const password =
         process.env[
             `SCRATCH_PASS_${i}`
         ];
 
-
-    /*
-     * Nếu không còn account
-     */
-
-    if (
-        !username &&
-        !password
-    ) {
+    if (!username && !password) {
 
         break;
-
     }
 
-
-    /*
-     * Account thiếu dữ liệu
-     */
-
-    if (
-        !username ||
-        !password
-    ) {
+    if (!username || !password) {
 
         console.log(
             `Account ${i} thiếu username hoặc password`
         );
 
         continue;
-
     }
 
-
-    /*
-     * Thử load session cũ
-     */
-
     const savedSession =
-        loadSession(
-            username
-        );
-
+        loadSession(username);
 
     accounts.push({
 
@@ -299,11 +199,7 @@ for (
         sessionId:
             savedSession,
 
-        /*
-         * X-Token không lưu trong .env.
-         * auth.py sẽ lấy tự động.
-         */
-
+        // X-Token sẽ được lấy bằng auth.py
         xToken:
             null,
 
@@ -311,16 +207,12 @@ for (
             savedSession
                 ? "session_loaded"
                 : "login_required"
-
     });
-
 }
-
 
 console.log(
     `Đã tải ${accounts.length} tài khoản`
 );
-
 
 // ==========================================
 // STATUS
@@ -334,11 +226,9 @@ function setStatus(
     account.status =
         status;
 
-
     console.log(
         `[${account.username}] ${status}`
     );
-
 
     io.emit(
         "accountStatus",
@@ -349,9 +239,7 @@ function setStatus(
             status
         }
     );
-
 }
-
 
 // ==========================================
 // LOGIN WITH PASSWORD
@@ -363,32 +251,23 @@ function loginWithPassword(
 ) {
 
     return new Promise(
-        (
-            resolve,
-            reject
-        ) => {
+        (resolve, reject) => {
 
             console.log(
                 `[${username}] Đang đăng nhập bằng password...`
             );
 
-
             Scratch.UserSession.create(
                 username,
                 password,
-                (
-                    err,
-                    user
-                ) => {
+                (err, user) => {
 
                     if (err) {
 
                         reject(err);
 
                         return;
-
                     }
-
 
                     if (!user) {
 
@@ -399,13 +278,9 @@ function loginWithPassword(
                         );
 
                         return;
-
                     }
 
-
-                    if (
-                        !user.sessionId
-                    ) {
+                    if (!user.sessionId) {
 
                         reject(
                             new Error(
@@ -414,30 +289,89 @@ function loginWithPassword(
                         );
 
                         return;
-
                     }
-
 
                     console.log(
                         `[${username}] LOGIN OK!`
                     );
 
+                    console.log(
+                        `[${username}] Session ID đã nhận`
+                    );
 
                     resolve(
                         user.sessionId
                     );
-
                 }
             );
-
         }
     );
-
 }
 
+// ==========================================
+// LOGIN ACCOUNT
+// ==========================================
+
+async function loginAccount(
+    account
+) {
+
+    setStatus(
+        account,
+        "logging_in"
+    );
+
+    try {
+
+        const sessionId =
+            await loginWithPassword(
+                account.username,
+                account.password
+            );
+
+        account.sessionId =
+            sessionId;
+
+        // Token cũ không còn dùng được
+        account.xToken =
+            null;
+
+        saveSession(
+            account.username,
+            sessionId
+        );
+
+        setStatus(
+            account,
+            "online"
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.log(
+            `[${account.username}] Login lỗi:`,
+            error.message
+        );
+
+        account.sessionId =
+            null;
+
+        account.xToken =
+            null;
+
+        setStatus(
+            account,
+            "login_error"
+        );
+
+        return false;
+    }
+}
 
 // ==========================================
-// PYTHON AUTH
+// GET AUTH FROM PYTHON
 // ==========================================
 
 function getAuthFromPython(
@@ -446,30 +380,18 @@ function getAuthFromPython(
 ) {
 
     return new Promise(
-        (
-            resolve,
-            reject
-        ) => {
+        (resolve, reject) => {
 
-            const authPath =
-                path.join(
-                    __dirname,
-                    "auth.py"
-                );
-
-
-            /*
-             * Render/Linux:
-             * python
-             *
-             * Nếu máy local chỉ có python3
-             * thì có thể đổi thành python3.
-             */
+            console.log(
+                `[${username}] Đang gọi auth.py...`
+            );
 
             execFile(
-                "python",
+                "uv",
                 [
-                    authPath,
+                    "run",
+                    "python",
+                    "auth.py",
                     sessionId,
                     username
                 ],
@@ -486,116 +408,94 @@ function getAuthFromPython(
                     if (error) {
 
                         console.log(
-                            `[${username}] auth.py lỗi:`
-                        );
-
-                        console.log(
+                            `[${username}] auth.py lỗi:`,
+                            stderr ||
                             error.message
                         );
-
-                        if (stderr) {
-
-                            console.log(
-                                stderr
-                            );
-
-                        }
 
                         reject(error);
 
                         return;
-
                     }
-
 
                     try {
 
-                        const result =
+                        const data =
                             JSON.parse(
                                 stdout
                             );
 
-
-                        if (
-                            result.error
-                        ) {
+                        if (data.error) {
 
                             reject(
                                 new Error(
-                                    result.error
+                                    data.error
                                 )
                             );
 
                             return;
-
                         }
 
-
-                        if (
-                            !result.xToken
-                        ) {
+                        if (!data.xToken) {
 
                             reject(
                                 new Error(
-                                    "auth.py không trả về X-Token"
+                                    "AUTH_NO_XTOKEN"
                                 )
                             );
 
                             return;
-
                         }
 
-
-                        resolve(
-                            result
-                        );
+                        resolve(data);
 
                     } catch (err) {
 
                         console.log(
-                            `[${username}] auth.py trả về dữ liệu không hợp lệ:`
+                            `[${username}] auth.py trả về không hợp lệ`
                         );
 
                         console.log(
+                            "stdout:",
                             stdout
                         );
 
+                        console.log(
+                            "stderr:",
+                            stderr
+                        );
+
                         reject(err);
-
                     }
-
                 }
             );
-
         }
     );
-
 }
 
-
 // ==========================================
-// REFRESH X-TOKEN
+// ENSURE X-TOKEN
 // ==========================================
 
-async function refreshXToken(
+async function ensureXToken(
     account
 ) {
 
-    if (
-        !account.sessionId
-    ) {
+    if (account.xToken) {
 
-        throw new Error(
-            "Không có Scratch session"
-        );
-
+        return true;
     }
 
+    if (!account.sessionId) {
+
+        throw new Error(
+            "NO_SESSION"
+        );
+    }
 
     console.log(
-        `[${account.username}] Đang lấy X-Token bằng scratchattach...`
+        `[${account.username}] Đang lấy X-Token...`
     );
-
 
     const auth =
         await getAuthFromPython(
@@ -603,170 +503,34 @@ async function refreshXToken(
             account.username
         );
 
-
     account.xToken =
         auth.xToken;
-
-
-    /*
-     * Nếu scratchattach trả session mới
-     * thì cập nhật luôn.
-     */
-
-    if (
-        auth.sessionId &&
-        auth.sessionId !==
-            account.sessionId
-    ) {
-
-        account.sessionId =
-            auth.sessionId;
-
-
-        saveSession(
-            account.username,
-            account.sessionId
-        );
-
-    }
-
 
     console.log(
         `[${account.username}] X-Token đã lấy thành công`
     );
 
-
-    return auth;
-
+    return true;
 }
-
-
-// ==========================================
-// LOGIN ACCOUNT
-// ==========================================
-
-async function loginAccount(
-    account
-) {
-
-    setStatus(
-        account,
-        "logging_in"
-    );
-
-
-    try {
-
-        /*
-         * Đăng nhập
-         */
-
-        const sessionId =
-            await loginWithPassword(
-                account.username,
-                account.password
-            );
-
-
-        /*
-         * Lưu session
-         */
-
-        account.sessionId =
-            sessionId;
-
-
-        saveSession(
-            account.username,
-            sessionId
-        );
-
-
-        /*
-         * Reset X-Token
-         */
-
-        account.xToken =
-            null;
-
-
-        /*
-         * Lấy X-Token
-         */
-
-        await refreshXToken(
-            account
-        );
-
-
-        setStatus(
-            account,
-            "online"
-        );
-
-
-        return true;
-
-    } catch (error) {
-
-        console.log(
-            `[${account.username}] Login lỗi:`,
-            error.message
-        );
-
-
-        account.sessionId =
-            null;
-
-        account.xToken =
-            null;
-
-
-        setStatus(
-            account,
-            "login_error"
-        );
-
-
-        return false;
-
-    }
-
-}
-
 
 // ==========================================
 // GET NOTIFICATIONS
 // ==========================================
 
-function getNotifications(
+async function getNotifications(
     account
 ) {
 
+    // Đảm bảo có X-Token trước khi request
+    await ensureXToken(
+        account
+    );
+
     return new Promise(
-        (
-            resolve,
-            reject
-        ) => {
-
-            if (
-                !account.sessionId
-            ) {
-
-                reject(
-                    new Error(
-                        "SESSION_INVALID"
-                    )
-                );
-
-                return;
-
-            }
-
+        (resolve, reject) => {
 
             const url =
                 `https://api.scratch.mit.edu/users/${encodeURIComponent(account.username)}/messages?limit=40&offset=0`;
-
 
             const args = [
 
@@ -787,35 +551,35 @@ function getNotifications(
 
                 "-H",
                 "user-agent: Mozilla/5.0"
-
             ];
 
+            // ==================================
+            // X-TOKEN
+            // ==================================
 
-            /*
-             * X-Token
-             */
-
-            if (
-                account.xToken
-            ) {
+            if (account.xToken) {
 
                 args.push(
                     "-H",
                     `x-token: ${account.xToken}`
                 );
-
             }
 
+            // ==================================
+            // SESSION
+            // ==================================
 
-            /*
-             * Session
-             */
+            if (account.sessionId) {
 
-            args.push(
-                "-H",
-                `cookie: scratchsessionsid=${account.sessionId}`
-            );
+                args.push(
+                    "-H",
+                    `cookie: scratchsessionsid=${account.sessionId}`
+                );
+            }
 
+            // ==================================
+            // CURL
+            // ==================================
 
             execFile(
                 "curl",
@@ -833,114 +597,53 @@ function getNotifications(
                     if (error) {
 
                         console.log(
-                            `[${account.username}] curl error:`,
+                            "curl error:",
                             error.message
                         );
 
+                        console.log(
+                            "stderr:",
+                            stderr
+                        );
 
                         reject(error);
 
                         return;
-
                     }
-
-
-                    /*
-                     * Kiểm tra response
-                     */
-
-                    const text =
-                        stdout.trim();
-
-
-                    /*
-                     * Scratch trả HTML/XML
-                     * thường là session/token lỗi.
-                     */
-
-                    if (
-                        text.startsWith("<")
-                    ) {
-
-                        console.log(
-                            `[${account.username}] Scratch trả về HTML/XML`
-                        );
-
-
-                        reject(
-                            new Error(
-                                "SESSION_INVALID"
-                            )
-                        );
-
-                        return;
-
-                    }
-
 
                     try {
 
                         const data =
                             JSON.parse(
-                                text
+                                stdout
                             );
 
-
-                        /*
-                         * Một số lỗi API
-                         */
-
-                        if (
-                            data &&
-                            data.status &&
-                            data.status >= 400
-                        ) {
-
-                            reject(
-                                new Error(
-                                    "SESSION_INVALID"
-                                )
-                            );
-
-                            return;
-
-                        }
-
-
-                        resolve(
-                            data
-                        );
+                        resolve(data);
 
                     } catch (err) {
 
                         console.log(
-                            `[${account.username}] Scratch response:`
+                            "Scratch response:"
                         );
 
                         console.log(
-                            text.slice(
+                            stdout.slice(
                                 0,
                                 1000
                             )
                         );
-
 
                         reject(
                             new Error(
                                 "INVALID_JSON"
                             )
                         );
-
                     }
-
                 }
             );
-
         }
     );
-
 }
-
 
 // ==========================================
 // SEND NOTIFICATIONS
@@ -951,19 +654,32 @@ function sendNotifications(
     data
 ) {
 
+    console.log(
+        `========== ${account.username} NOTIFICATIONS ==========`
+    );
+
+    console.dir(
+        data,
+        {
+            depth: null
+        }
+    );
+
+    console.log(
+        "========================================================"
+    );
+
     io.emit(
         "notification",
         {
             username:
                 account.username,
 
-            notifications:
+            notification:
                 data
         }
     );
-
 }
-
 
 // ==========================================
 // CHECK ACCOUNT
@@ -977,7 +693,6 @@ async function checkAccount(
         `\n========== CHECK ${account.username} ==========`
     );
 
-
     console.log(
         "Session:",
         account.sessionId
@@ -985,105 +700,39 @@ async function checkAccount(
             : "KHÔNG"
     );
 
+    // =====================================
+    // KHÔNG CÓ SESSION
+    // =====================================
 
-    /*
-     * Không có session
-     */
-
-    if (
-        !account.sessionId
-    ) {
+    if (!account.sessionId) {
 
         console.log(
             `[${account.username}] Không có session → login`
         );
-
 
         const success =
             await loginAccount(
                 account
             );
 
-
         if (!success) {
 
             return;
-
         }
-
     }
 
+    // =====================================
+    // CÓ SESSION
+    // =====================================
 
-    /*
-     * Nếu chưa có X-Token
-     */
-
-    if (
-        !account.xToken
-    ) {
-
-        try {
-
-            await refreshXToken(
-                account
-            );
-
-        } catch (error) {
-
-            console.log(
-                `[${account.username}] Session không dùng được:`,
-                error.message
-            );
-
-
-            /*
-             * Xóa session cũ
-             */
-
-            account.sessionId =
-                null;
-
-            account.xToken =
-                null;
-
-
-            deleteSession(
-                account.username
-            );
-
-
-            /*
-             * Login lại
-             */
-
-            await loginAccount(
-                account
-            );
-
-        }
-
-    }
-
-
-    /*
-     * Nếu login vẫn thất bại
-     */
-
-    if (
-        !account.sessionId ||
-        !account.xToken
-    ) {
-
-        return;
-
-    }
-
+    console.log(
+        `[${account.username}] Đang dùng session...`
+    );
 
     setStatus(
         account,
         "checking_session"
     );
-
 
     try {
 
@@ -1092,11 +741,9 @@ async function checkAccount(
                 account
             );
 
-
         console.log(
             `[${account.username}] Session OK`
         );
-
 
         console.log(
             `[${account.username}] Số notification:`,
@@ -1107,12 +754,10 @@ async function checkAccount(
                 : "unknown"
         );
 
-
         setStatus(
             account,
             "online"
         );
-
 
         sendNotifications(
             account,
@@ -1126,20 +771,24 @@ async function checkAccount(
             error.message
         );
 
-
-        /*
-         * Session invalid
-         */
+        // =================================
+        // SESSION / AUTH LỖI
+        // =================================
 
         if (
             error.message ===
-            "SESSION_INVALID"
+                "SESSION_INVALID" ||
+
+            error.message ===
+                "AUTH_NO_XTOKEN" ||
+
+            error.message ===
+                "NO_SESSION"
         ) {
 
             console.log(
-                `[${account.username}] Session hết hạn → login lại`
+                `[${account.username}] Authentication lỗi → đăng nhập lại`
             );
-
 
             account.sessionId =
                 null;
@@ -1147,63 +796,51 @@ async function checkAccount(
             account.xToken =
                 null;
 
-
             deleteSession(
                 account.username
             );
-
 
             setStatus(
                 account,
                 "session_expired"
             );
 
-
             await loginAccount(
                 account
             );
 
-
             return;
-
         }
 
+        // =================================
+        // LỖI KHÁC
+        // =================================
 
-        /*
-         * Lỗi khác
-         */
+        setStatus(
+            account,
+            "online"
+        );
 
         console.log(
             `[${account.username}] Giữ session vì lỗi không phải authentication`
         );
-
     }
-
 }
 
-
 // ==========================================
-// CHECK ALL
+// CHECK ALL ACCOUNTS
 // ==========================================
 
-let checking =
-    false;
-
+let checking = false;
 
 async function checkAllAccounts() {
 
-    if (
-        checking
-    ) {
+    if (checking) {
 
         return;
-
     }
 
-
-    checking =
-        true;
-
+    checking = true;
 
     try {
 
@@ -1216,11 +853,10 @@ async function checkAllAccounts() {
                 account
             );
 
-
+            // Nghỉ giữa các tài khoản
             await sleep(
                 2000
             );
-
         }
 
     } catch (error) {
@@ -1232,21 +868,15 @@ async function checkAllAccounts() {
 
     } finally {
 
-        checking =
-            false;
-
+        checking = false;
     }
-
 }
-
 
 // ==========================================
 // SLEEP
 // ==========================================
 
-function sleep(
-    ms
-) {
+function sleep(ms) {
 
     return new Promise(
         resolve =>
@@ -1255,9 +885,7 @@ function sleep(
                 ms
             )
     );
-
 }
-
 
 // ==========================================
 // SOCKET.IO
@@ -1271,28 +899,9 @@ io.on(
             "Website connected"
         );
 
-
-        /*
-         * Gửi danh sách account
-         */
-
-        socket.emit(
-            "accounts",
-            accounts.map(
-                account => ({
-                    username:
-                        account.username,
-
-                    status:
-                        account.status
-                })
-            )
-        );
-
-
-        /*
-         * Website yêu cầu cập nhật
-         */
+        // ==================================
+        // WEBSITE YÊU CẦU UPDATE
+        // ==================================
 
         socket.on(
             "updateNow",
@@ -1302,23 +911,104 @@ io.on(
                     "Website yêu cầu cập nhật notification"
                 );
 
+                for (
+                    const account
+                    of accounts
+                ) {
 
-                await checkAllAccounts();
+                    try {
 
+                        console.log(
+                            `[${account.username}] Đang cập nhật...`
+                        );
+
+                        // ==================================
+                        // NẾU CHƯA CÓ SESSION
+                        // ==================================
+
+                        if (
+                            !account.sessionId
+                        ) {
+
+                            const success =
+                                await loginAccount(
+                                    account
+                                );
+
+                            if (!success) {
+
+                                socket.emit(
+                                    "notificationError",
+                                    {
+                                        username:
+                                            account.username,
+
+                                        error:
+                                            "LOGIN_FAILED"
+                                    }
+                                );
+
+                                continue;
+                            }
+                        }
+
+                        // ==================================
+                        // LẤY NOTIFICATION
+                        // ==================================
+
+                        const messages =
+                            await getNotifications(
+                                account
+                            );
+
+                        console.log(
+                            `[${account.username}] Nhận được ${
+                                Array.isArray(
+                                    messages
+                                )
+                                    ? messages.length
+                                    : 0
+                            } messages`
+                        );
+
+                        socket.emit(
+                            "notification",
+                            {
+                                username:
+                                    account.username,
+
+                                notifications:
+                                    messages
+                            }
+                        );
+
+                    } catch (error) {
+
+                        console.error(
+                            `[${account.username}]`,
+                            error.message
+                        );
+
+                        socket.emit(
+                            "notificationError",
+                            {
+                                username:
+                                    account.username,
+
+                                error:
+                                    error.message
+                            }
+                        );
+                    }
+                }
             }
         );
-
     }
 );
 
-
 // ==========================================
-// STARTUP
+// START SERVER
 // ==========================================
-
-/*
- * Chỉ check sau khi server đã listen.
- */
 
 server.listen(
     PORT,
@@ -1339,10 +1029,9 @@ server.listen(
         );
 
         console.log(
-            `Port: ${PORT}`
+            `http://localhost:${PORT}`
         );
 
         console.log("");
-
     }
 );
