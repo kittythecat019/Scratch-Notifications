@@ -2,31 +2,32 @@ FROM node:22-bookworm-slim
 
 WORKDIR /app
 
-# Python + curl + uv
 RUN apt-get update \
-    && apt-get install -y python3 python3-pip curl \
+    && apt-get install -y \
+        python3 \
+        python3-pip \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Cài uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+# Cài uv vào /usr/local/bin
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && cp /root/.local/bin/uv /usr/local/bin/uv \
+    && chmod +x /usr/local/bin/uv
 
-# Đưa uv vào PATH
-ENV PATH="/root/.local/bin:${PATH}"
+# Kiểm tra uv ngay lúc BUILD
+RUN /usr/local/bin/uv --version
 
-# Node dependencies
 COPY package*.json ./
 
 RUN npm install
 
-# Python dependencies
 COPY requirements.txt ./
 
 RUN pip3 install \
-    --no-cache-dir \
     --break-system-packages \
+    --no-cache-dir \
     -r requirements.txt
 
-# Source code
 COPY . .
 
 EXPOSE 10000
