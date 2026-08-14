@@ -1,0 +1,14 @@
+{
+  "name": "scratch-notification",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "scratch-api": "^1.1.12",
+    "socket.io": "^4.8.1"
+  }
+}
