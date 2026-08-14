@@ -7,6 +7,97 @@ const fs = require("fs");
 const Scratch = require("scratch-api");
 const { Server } = require("socket.io");
 const { execFile } = require("child_process");
+function getAuthFromPython(
+    sessionId,
+    username
+) {
+
+    return new Promise(
+        (resolve, reject) => {
+
+            const authPath =
+                path.join(
+                    __dirname,
+                    "auth.py"
+                );
+
+            execFile(
+                "python",
+                [
+                    authPath,
+                    sessionId,
+                    username
+                ],
+                {
+                    maxBuffer:
+                        1024 * 1024
+                },
+                (
+                    error,
+                    stdout,
+                    stderr
+                ) => {
+
+                    if (error) {
+
+                        console.log(
+                            `[${username}] Python auth lỗi:`,
+                            error.message
+                        );
+
+                        console.log(
+                            stderr
+                        );
+
+                        reject(error);
+
+                        return;
+                    }
+
+
+                    try {
+
+                        const result =
+                            JSON.parse(
+                                stdout
+                            );
+
+
+                        if (
+                            result.error
+                        ) {
+
+                            reject(
+                                new Error(
+                                    result.error
+                                )
+                            );
+
+                            return;
+                        }
+
+
+                        resolve(
+                            result
+                        );
+
+                    } catch (error) {
+
+                        console.log(
+                            `[${username}] Python trả về dữ liệu không hợp lệ:`
+                        );
+
+                        console.log(
+                            stdout
+                        );
+
+                        reject(error);
+                    }
+                }
+            );
+        }
+    );
+}
 
 // ==========================================
 // SERVER
