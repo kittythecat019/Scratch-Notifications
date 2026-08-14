@@ -24,8 +24,31 @@ const PYTHON =
 const UV_PATHS = [
     "/usr/local/bin/uv",
     "/usr/bin/uv",
-    "/root/.local/bin/uv"
+    "/root/.local/bin/uv",
+    "/usr/local/sbin/uv"
 ];
+
+let UV_PATH = null;
+
+for (const possiblePath of UV_PATHS) {
+
+    if (fs.existsSync(possiblePath)) {
+
+        UV_PATH = possiblePath;
+
+        break;
+    }
+}
+
+console.log(
+    "Python:",
+    PYTHON
+);
+
+console.log(
+    "UV:",
+    UV_PATH || "KHÔNG TÌM THẤY"
+);
 
 
 // Tìm uv
