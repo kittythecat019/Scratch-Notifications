@@ -28,7 +28,6 @@ const UV_PATHS = [
     "/usr/local/sbin/uv"
 ];
 
-let UV_PATH = null;
 
 for (const possiblePath of UV_PATHS) {
 
